@@ -40,7 +40,7 @@ An AI-powered content writer prototype that generates SEO-optimized content thro
 
 1. **Clone the repository**
    ```bash
-   cd e:\QED42\seo
+   git clone https://github.com/akshayram1/AI_Content_Writer_Prototype.git
    ```
 
 2. **Install Frontend Dependencies**
