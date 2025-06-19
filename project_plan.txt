@@ -1,0 +1,1587 @@
+# AI Content Writer Prototype - Detailed Development Plan
+## SEO Scientist MVP - 3-Day Implementation Guide
+
+---
+
+## PROJECT OVERVIEW
+
+**Objective**: Deliver a functional AI Content Writer prototype within 3 days
+**Target**: Simplified multi-step workflow for SEO-optimized content generation
+**Tech Stack**: React.js + Node.js + Python + LLM APIs
+**Deployment**: Vercel
+**Timeline**: 72 hours (3 days)
+
+---
+
+## TECHNICAL ARCHITECTURE
+
+### System Architecture
+```
+Frontend (React + Material-UI)
+    ↓ HTTP/REST
+Backend API Layer (Node.js + Express)
+    ↓ HTTP calls
+LLM Processing Service (Python + Flask/FastAPI)
+    ↓ API calls
+External LLM (OpenAI GPT-4)
+```
+
+### Data Flow
+```
+User Input → Keyword Research → Title Generation → Topic Selection → Content Creation → Export
+```
+
+### Storage Strategy
+- **Frontend**: localStorage for user session data
+- **Backend**: In-memory storage (Node.js variables/objects)
+- **No Database**: All data temporary, export-based persistence
+
+---
+
+## DAY-BY-DAY IMPLEMENTATION PLAN
+
+## DAY 1: FOUNDATION SETUP (8 hours)
+
+### Hour 1-2: Project Setup & Environment
+**Frontend Setup:**
+```bash
+npx create-react-app seo-content-writer
+cd seo-content-writer
+npm install @mui/material @mui/icons-material @emotion/react @emotion/styled
+npm install axios react-router-dom
+npm install firebase  # for authentication
+```
+
+**Backend Setup:**
+```bash
+mkdir backend
+cd backend
+npm init -y
+npm install express cors dotenv body-parser
+npm install axios  # for communicating with Python service
+```
+
+**Python Service Setup:**
+```bash
+mkdir llm-service
+cd llm-service
+pip install flask flask-cors openai anthropic python-dotenv
+# or pip install fastapi uvicorn instead of flask
+```
+
+### Hour 3-4: Basic Frontend Structure
+**File Structure:**
+```
+src/
+├── components/
+│   ├── common/
+│   │   ├── Header.jsx
+│   │   ├── Loading.jsx
+│   │   └── ErrorMessage.jsx
+│   ├── workflow/
+│   │   ├── WorkflowStepper.jsx
+│   │   ├── KeywordResearch.jsx
+│   │   ├── TitleGeneration.jsx
+│   │   ├── TopicSelection.jsx
+│   │   └── ContentCreation.jsx
+│   ├── auth/
+│   │   ├── Login.jsx
+│   │   └── Register.jsx
+│   └── dashboard/
+│       ├── Dashboard.jsx
+│       └── ContentPreview.jsx
+├── services/
+│   ├── api.js
+│   ├── auth.js
+│   └── storage.js
+├── utils/
+│   ├── constants.js
+│   └── helpers.js
+├── context/
+│   └── AppContext.js
+└── styles/
+    └── theme.js
+```
+
+**Key Components to Build:**
+1. **WorkflowStepper.jsx** - Material-UI Stepper component
+2. **AppContext.js** - React Context for state management
+3. **Basic routing** - React Router setup
+
+### Hour 5-6: Backend API Structure
+**Backend File Structure:**
+```
+backend/
+├── server.js
+├── routes/
+│   ├── keywords.js
+│   ├── titles.js
+│   ├── topics.js
+│   ├── content.js
+│   └── auth.js
+├── middleware/
+│   ├── auth.js
+│   └── validation.js
+├── services/
+│   └── llmService.js
+└── utils/
+    ├── helpers.js
+    └── constants.js
+```
+
+**Basic Express Server Setup:**
+```javascript
+// server.js
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+
+dotenv.config();
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// Routes
+app.use('/api/keywords', require('./routes/keywords'));
+app.use('/api/titles', require('./routes/titles'));
+app.use('/api/topics', require('./routes/topics'));
+app.use('/api/content', require('./routes/content'));
+app.use('/api/auth', require('./routes/auth'));
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+```
+
+### Hour 7-8: Python LLM Service Foundation
+**Python Service Structure:**
+```
+llm-service/
+├── app.py (Flask) or main.py (FastAPI)
+├── services/
+│   ├── openai_service.py
+│   ├── claude_service.py
+│   └── seo_scorer.py
+├── prompts/
+│   ├── keyword_prompts.py
+│   ├── title_prompts.py
+│   ├── topic_prompts.py
+│   └── content_prompts.py
+└── utils/
+    ├── validators.py
+    └── helpers.py
+```
+
+**Basic Flask Setup:**
+```python
+# app.py
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+app = Flask(__name__)
+CORS(app)
+
+@app.route('/generate-keywords', methods=['POST'])
+def generate_keywords():
+    # Implementation placeholder
+    pass
+
+@app.route('/generate-titles', methods=['POST'])
+def generate_titles():
+    # Implementation placeholder
+    pass
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5001)
+```
+
+**End of Day 1 Deliverables:**
+- React app with basic structure and Material-UI
+- Express server with route structure
+- Python Flask service foundation
+- Basic authentication setup (Firebase config)
+- Git repository initialized
+
+---
+
+## DAY 2: CORE FUNCTIONALITY (8 hours)
+
+### Hour 1-2: LLM Integration & Prompt Engineering
+**OpenAI Service Implementation:**
+```python
+# services/openai_service.py
+import openai
+import os
+
+openai.api_key = os.getenv('OPENAI_API_KEY')
+
+class OpenAIService:
+    def __init__(self):
+        self.client = openai.OpenAI()
+    
+    def generate_keywords(self, seed_keyword):
+        prompt = f"""
+        Generate 5 SEO-focused keywords related to: "{seed_keyword}"
+        
+        Requirements:
+        - Include long-tail keywords
+        - Focus on commercial intent
+        - Avoid overly competitive terms
+        - Return as JSON array
+        
+        Format: ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
+        """
+        
+        response = self.client.chat.completions.create(
+            model="gpt-4-turbo-preview",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        return response.choices[0].message.content
+    
+    def generate_titles(self, keyword, tone="professional"):
+        prompt = f"""
+        Create 3 SEO-optimized blog titles for keyword: "{keyword}"
+        
+        Requirements:
+        - Include target keyword naturally
+        - 50-60 characters ideal length
+        - {tone} tone
+        - Click-worthy and engaging
+        - Follow SEO best practices
+        
+        Return as JSON array: ["title1", "title2", "title3"]
+        """
+        
+        response = self.client.chat.completions.create(
+            model="gpt-4-turbo-preview",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.8
+        )
+        return response.choices[0].message.content
+```
+
+**Prompt Templates:**
+```python
+# prompts/keyword_prompts.py
+KEYWORD_RESEARCH_PROMPT = """
+Analyze the seed keyword "{seed_keyword}" and generate 5 related SEO keywords.
+
+Consider:
+- Search intent (informational, commercial, transactional)
+- Keyword difficulty (prefer medium competition)
+- Long-tail variations
+- Related semantic keywords
+
+Return as valid JSON array only: ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
+"""
+
+TITLE_GENERATION_PROMPT = """
+Create 3 compelling blog titles for the keyword "{keyword}".
+
+Requirements:
+- Naturally include the target keyword
+- 50-60 characters optimal length
+- {tone} tone of voice
+- Promise clear value to readers
+- Follow proven title structures
+
+Return as valid JSON array: ["title1", "title2", "title3"]
+"""
+
+TOPIC_OUTLINE_PROMPT = """
+Create a detailed blog outline for the title: "{title}"
+Target keyword: "{keyword}"
+
+Structure:
+- Introduction hook
+- 3-5 main sections with H2 headings
+- Key points under each section
+- Conclusion with call-to-action
+
+Return as JSON object with sections array.
+"""
+
+CONTENT_GENERATION_PROMPT = """
+Write a {content_type} for:
+Title: "{title}"
+Target keyword: "{keyword}"
+Outline: {outline}
+
+Requirements:
+- {word_count} words
+- Include target keyword naturally 2-3 times
+- Engaging and informative tone
+- SEO-optimized structure
+- Include relevant subheadings if applicable
+
+Return clean, formatted text ready for publication.
+"""
+```
+
+### Hour 3-4: Backend API Implementation
+**API Route Implementations:**
+```javascript
+// routes/keywords.js
+const express = require('express');
+const axios = require('axios');
+const router = express.Router();
+
+router.post('/research', async (req, res) => {
+    try {
+        const { seedKeyword } = req.body;
+        
+        const response = await axios.post('http://localhost:5001/generate-keywords', {
+            seed_keyword: seedKeyword
+        });
+        
+        const keywords = JSON.parse(response.data.keywords);
+        
+        // Store in memory for session
+        req.session.keywords = keywords;
+        req.session.seedKeyword = seedKeyword;
+        
+        res.json({
+            success: true,
+            data: {
+                seedKeyword,
+                keywords,
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to generate keywords'
+        });
+    }
+});
+
+module.exports = router;
+```
+
+**Session Management:**
+```javascript
+// In-memory session storage
+const sessions = new Map();
+
+// Middleware for session handling
+const sessionMiddleware = (req, res, next) => {
+    const sessionId = req.headers['session-id'] || generateSessionId();
+    
+    if (!sessions.has(sessionId)) {
+        sessions.set(sessionId, {
+            id: sessionId,
+            data: {},
+            createdAt: new Date(),
+            lastAccessed: new Date()
+        });
+    }
+    
+    req.session = sessions.get(sessionId);
+    req.session.lastAccessed = new Date();
+    res.setHeader('session-id', sessionId);
+    
+    next();
+};
+```
+
+### Hour 5-6: Frontend State Management & API Integration
+**React Context Setup:**
+```javascript
+// context/AppContext.js
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
+
+const AppContext = createContext();
+
+const initialState = {
+    currentStep: 0,
+    seedKeyword: '',
+    keywords: [],
+    selectedKeyword: '',
+    titles: [],
+    selectedTitle: '',
+    topics: [],
+    selectedTopic: null,
+    generatedContent: '',
+    loading: false,
+    error: null,
+    sessionData: {}
+};
+
+const appReducer = (state, action) => {
+    switch (action.type) {
+        case 'SET_LOADING':
+            return { ...state, loading: action.payload };
+        case 'SET_ERROR':
+            return { ...state, error: action.payload, loading: false };
+        case 'SET_STEP':
+            return { ...state, currentStep: action.payload };
+        case 'SET_KEYWORDS':
+            return { 
+                ...state, 
+                keywords: action.payload, 
+                loading: false,
+                currentStep: 1 
+            };
+        case 'SET_TITLES':
+            return { 
+                ...state, 
+                titles: action.payload, 
+                loading: false,
+                currentStep: 2 
+            };
+        // Add more cases...
+        default:
+            return state;
+    }
+};
+
+export const AppProvider = ({ children }) => {
+    const [state, dispatch] = useReducer(appReducer, initialState);
+    
+    // Load from localStorage on init
+    useEffect(() => {
+        const saved = localStorage.getItem('seo-writer-session');
+        if (saved) {
+            const data = JSON.parse(saved);
+            dispatch({ type: 'LOAD_SESSION', payload: data });
+        }
+    }, []);
+    
+    // Save to localStorage on state changes
+    useEffect(() => {
+        localStorage.setItem('seo-writer-session', JSON.stringify(state));
+    }, [state]);
+    
+    return (
+        <AppContext.Provider value={{ state, dispatch }}>
+            {children}
+        </AppContext.Provider>
+    );
+};
+
+export const useApp = () => useContext(AppContext);
+```
+
+**API Service:**
+```javascript
+// services/api.js
+import axios from 'axios';
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+class ApiService {
+    constructor() {
+        this.client = axios.create({
+            baseURL: API_BASE,
+            timeout: 30000
+        });
+        
+        // Add session ID to requests
+        this.client.interceptors.request.use(config => {
+            const sessionId = localStorage.getItem('session-id');
+            if (sessionId) {
+                config.headers['session-id'] = sessionId;
+            }
+            return config;
+        });
+        
+        // Store session ID from responses
+        this.client.interceptors.response.use(response => {
+            const sessionId = response.headers['session-id'];
+            if (sessionId) {
+                localStorage.setItem('session-id', sessionId);
+            }
+            return response;
+        });
+    }
+    
+    async researchKeywords(seedKeyword) {
+        const response = await this.client.post('/keywords/research', {
+            seedKeyword
+        });
+        return response.data;
+    }
+    
+    async generateTitles(keyword) {
+        const response = await this.client.post('/titles/generate', {
+            keyword
+        });
+        return response.data;
+    }
+    
+    async generateTopics(title, keyword) {
+        const response = await this.client.post('/topics/generate', {
+            title,
+            keyword
+        });
+        return response.data;
+    }
+    
+    async generateContent(title, keyword, outline, contentType = 'blog_intro', wordCount = 150) {
+        const response = await this.client.post('/content/generate', {
+            title,
+            keyword,
+            outline,
+            contentType,
+            wordCount
+        });
+        return response.data;
+    }
+}
+
+export default new ApiService();
+```
+
+### Hour 7-8: Component Implementation
+**Workflow Components:**
+```javascript
+// components/workflow/KeywordResearch.jsx
+import React, { useState } from 'react';
+import { 
+    Box, 
+    TextField, 
+    Button, 
+    List, 
+    ListItem, 
+    ListItemText,
+    ListItemButton,
+    Typography,
+    CircularProgress,
+    Alert
+} from '@mui/material';
+import { useApp } from '../../context/AppContext';
+import ApiService from '../../services/api';
+
+const KeywordResearch = () => {
+    const { state, dispatch } = useApp();
+    const [seedKeyword, setSeedKeyword] = useState(state.seedKeyword || '');
+    
+    const handleResearch = async () => {
+        if (!seedKeyword.trim()) return;
+        
+        dispatch({ type: 'SET_LOADING', payload: true });
+        
+        try {
+            const result = await ApiService.researchKeywords(seedKeyword);
+            dispatch({ 
+                type: 'SET_KEYWORDS', 
+                payload: result.data.keywords 
+            });
+            dispatch({
+                type: 'SET_SEED_KEYWORD',
+                payload: seedKeyword
+            });
+        } catch (error) {
+            dispatch({ 
+                type: 'SET_ERROR', 
+                payload: 'Failed to generate keywords. Please try again.' 
+            });
+        }
+    };
+    
+    const handleKeywordSelect = (keyword) => {
+        dispatch({ type: 'SET_SELECTED_KEYWORD', payload: keyword });
+        dispatch({ type: 'SET_STEP', payload: 1 });
+    };
+    
+    return (
+        <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
+            <Typography variant="h5" gutterBottom>
+                Keyword Research
+            </Typography>
+            
+            <Box sx={{ mb: 3 }}>
+                <TextField
+                    fullWidth
+                    label="Enter seed keyword"
+                    value={seedKeyword}
+                    onChange={(e) => setSeedKeyword(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleResearch()}
+                    sx={{ mb: 2 }}
+                />
+                <Button
+                    variant="contained"
+                    onClick={handleResearch}
+                    disabled={!seedKeyword.trim() || state.loading}
+                    startIcon={state.loading && <CircularProgress size={20} />}
+                >
+                    {state.loading ? 'Researching...' : 'Research Keywords'}
+                </Button>
+            </Box>
+            
+            {state.error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {state.error}
+                </Alert>
+            )}
+            
+            {state.keywords.length > 0 && (
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        Suggested Keywords:
+                    </Typography>
+                    <List>
+                        {state.keywords.map((keyword, index) => (
+                            <ListItem key={index} disablePadding>
+                                <ListItemButton 
+                                    onClick={() => handleKeywordSelect(keyword)}
+                                    selected={state.selectedKeyword === keyword}
+                                >
+                                    <ListItemText primary={keyword} />
+                                </ListItemButton>
+                            </ListItem>
+                        ))}
+                    </List>
+                </Box>
+            )}
+        </Box>
+    );
+};
+
+export default KeywordResearch;
+```
+
+**End of Day 2 Deliverables:**
+- Complete LLM integration with prompt engineering
+- Functional backend APIs for all workflow steps
+- React components for keyword research and title generation
+- State management with context and localStorage
+- Session handling and API communication
+
+---
+
+## DAY 3: INTEGRATION & DEPLOYMENT (8 hours)
+
+### Hour 1-2: Complete Remaining Components
+**Content Creation Component:**
+```javascript
+// components/workflow/ContentCreation.jsx
+import React, { useState, useEffect } from 'react';
+import { 
+    Box, 
+    Typography, 
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Button,
+    Paper,
+    Alert,
+    Chip,
+    Divider
+} from '@mui/material';
+import { useApp } from '../../context/AppContext';
+import ApiService from '../../services/api';
+
+const ContentCreation = () => {
+    const { state, dispatch } = useApp();
+    const [contentType, setContentType] = useState('blog_intro');
+    const [wordCount, setWordCount] = useState(150);
+    
+    const generateContent = async () => {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        
+        try {
+            const result = await ApiService.generateContent(
+                state.selectedTitle,
+                state.selectedKeyword,
+                state.selectedTopic,
+                contentType,
+                wordCount
+            );
+            
+            dispatch({ 
+                type: 'SET_CONTENT', 
+                payload: result.data.content 
+            });
+        } catch (error) {
+            dispatch({ 
+                type: 'SET_ERROR', 
+                payload: 'Failed to generate content. Please try again.' 
+            });
+        }
+    };
+    
+    const handleExport = () => {
+        const content = `
+Title: ${state.selectedTitle}
+Keyword: ${state.selectedKeyword}
+Content Type: ${contentType}
+Word Count: ${wordCount}
+
+Content:
+${state.generatedContent}
+        `.trim();
+        
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `seo-content-${Date.now()}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+    
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(state.generatedContent);
+        // Show success message
+    };
+    
+    return (
+        <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+            <Typography variant="h5" gutterBottom>
+                Content Creation
+            </Typography>
+            
+            {/* Selection Summary */}
+            <Paper sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
+                <Typography variant="subtitle2" gutterBottom>
+                    Your Selections:
+                </Typography>
+                <Chip label={`Keyword: ${state.selectedKeyword}`} sx={{ mr: 1, mb: 1 }} />
+                <Chip label={`Title: ${state.selectedTitle}`} sx={{ mr: 1, mb: 1 }} />
+            </Paper>
+            
+            {/* Content Options */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                <FormControl fullWidth>
+                    <InputLabel>Content Type</InputLabel>
+                    <Select
+                        value={contentType}
+                        onChange={(e) => setContentType(e.target.value)}
+                    >
+                        <MenuItem value="blog_intro">Blog Introduction</MenuItem>
+                        <MenuItem value="meta_description">Meta Description</MenuItem>
+                        <MenuItem value="product_description">Product Description</MenuItem>
+                        <MenuItem value="landing_page">Landing Page Copy</MenuItem>
+                    </Select>
+                </FormControl>
+                
+                <FormControl fullWidth>
+                    <InputLabel>Word Count</InputLabel>
+                    <Select
+                        value={wordCount}
+                        onChange={(e) => setWordCount(e.target.value)}
+                    >
+                        <MenuItem value={100}>100 words</MenuItem>
+                        <MenuItem value={150}>150 words</MenuItem>
+                        <MenuItem value={200}>200 words</MenuItem>
+                        <MenuItem value={300}>300 words</MenuItem>
+                    </Select>
+                </FormControl>
+            </Box>
+            
+            <Button
+                variant="contained"
+                onClick={generateContent}
+                disabled={state.loading}
+                sx={{ mb: 3 }}
+            >
+                Generate Content
+            </Button>
+            
+            {/* Generated Content */}
+            {state.generatedContent && (
+                <Paper sx={{ p: 3, mb: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                        Generated Content:
+                    </Typography>
+                    <Typography 
+                        component="pre" 
+                        sx={{ 
+                            whiteSpace: 'pre-wrap',
+                            fontFamily: 'inherit',
+                            fontSize: '1rem',
+                            lineHeight: 1.6
+                        }}
+                    >
+                        {state.generatedContent}
+                    </Typography>
+                    
+                    <Divider sx={{ my: 2 }} />
+                    
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Button 
+                            variant="outlined" 
+                            onClick={copyToClipboard}
+                        >
+                            Copy to Clipboard
+                        </Button>
+                        <Button 
+                            variant="outlined" 
+                            onClick={handleExport}
+                        >
+                            Download as Text
+                        </Button>
+                    </Box>
+                </Paper>
+            )}
+        </Box>
+    );
+};
+
+export default ContentCreation;
+```
+
+### Hour 3-4: SEO Scoring & Authentication
+**SEO Scoring Service:**
+```python
+# services/seo_scorer.py
+import re
+from typing import Dict, List
+
+class SEOScorer:
+    def __init__(self):
+        self.scoring_rules = {
+            'keyword_density': {'min': 1, 'max': 3, 'weight': 0.3},
+            'title_length': {'min': 30, 'max': 60, 'weight': 0.2},
+            'readability': {'weight': 0.2},
+            'structure': {'weight': 0.3}
+        }
+    
+    def analyze_content(self, content: str, keyword: str, title: str) -> Dict:
+        scores = {}
+        
+        # Keyword density analysis
+        keyword_count = len(re.findall(re.escape(keyword.lower()), content.lower()))
+        word_count = len(content.split())
+        keyword_density = (keyword_count / word_count) * 100 if word_count > 0 else 0
+        
+        scores['keyword_density'] = {
+            'value': keyword_density,
+            'score': self._score_keyword_density(keyword_density),
+            'feedback': self._get_keyword_feedback(keyword_density)
+        }
+        
+        # Title length analysis
+        title_length = len(title)
+        scores['title_length'] = {
+            'value': title_length,
+            'score': self._score_title_length(title_length),
+            'feedback': self._get_title_feedback(title_length)
+        }
+        
+        # Overall score calculation
+        overall_score = sum(
+            scores[key]['score'] * self.scoring_rules[key]['weight']
+            for key in scores.keys()
+            if key in self.scoring_rules
+        )
+        
+        return {
+            'overall_score': round(overall_score, 1),
+            'scores': scores,
+            'recommendations': self._get_recommendations(scores)
+        }
+    
+    def _score_keyword_density(self, density: float) -> float:
+        if 1 <= density <= 3:
+            return 100
+        elif density < 1:
+            return max(0, density * 100)
+        else:
+            return max(0, 100 - (density - 3) * 20)
+    
+    def _get_keyword_feedback(self, density: float) -> str:
+        if density < 1:
+            return "Keyword density is too low. Consider using the target keyword more."
+        elif density > 3:
+            return "Keyword density is too high. This might be considered keyword stuffing."
+        else:
+            return "Good keyword density for SEO."
+    
+    def _score_title_length(self, length: int) -> float:
+        if 30 <= length <= 60:
+            return 100
+        elif length < 30:
+            return max(0, (length / 30) * 100)
+        else:
+            return max(0, 100 - (length - 60) * 2)
+    
+    def _get_title_feedback(self, length: int) -> str:
+        if length < 30:
+            return "Title is too short. Consider making it more descriptive."
+        elif length > 60:
+            return "Title is too long. It might be truncated in search results."
+        else:
+            return "Title length is optimal for SEO."
+    
+    def _get_recommendations(self, scores: Dict) -> List[str]:
+        recommendations = []
+        
+        if scores['keyword_density']['score'] < 80:
+            recommendations.append("Improve keyword usage in content")
+        
+        if scores['title_length']['score'] < 80:
+            recommendations.append("Optimize title length")
+        
+        return recommendations
+```
+
+**Firebase Authentication Setup:**
+```javascript
+// services/auth.js
+import { initializeApp } from 'firebase/app';
+import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged 
+} from 'firebase/auth';
+
+const firebaseConfig = {
+    // Your Firebase config
+    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+class AuthService {
+    constructor() {
+        this.auth = auth;
+        this.currentUser = null;
+        
+        onAuthStateChanged(this.auth, (user) => {
+            this.currentUser = user;
+        });
+    }
+    
+    async signIn(email, password) {
+        try {
+            const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
+            return { success: true, user: userCredential.user };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+    
+    async signUp(email, password) {
+        try {
+            const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
+            return { success: true, user: userCredential.user };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+    
+    async signOut() {
+        try {
+            await signOut(this.auth);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+    
+    getCurrentUser() {
+        return this.currentUser;
+    }
+}
+
+export default new AuthService();
+```
+
+### Hour 5-6: Testing & Bug Fixes
+**Testing Strategy:**
+1. **Unit Testing** - Test individual components
+2. **Integration Testing** - Test API endpoints
+3. **End-to-End Testing** - Test complete workflow
+4. **LLM Response Testing** - Validate AI outputs
+
+**Test Cases:**
+```javascript
+// __tests__/workflow.test.js
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { AppProvider } from '../context/AppContext';
+import KeywordResearch from '../components/workflow/KeywordResearch';
+
+// Mock API service
+jest.mock('../services/api');
+
+describe('Keyword Research Component', () => {
+    test('should render input field and research button', () => {
+        render(
+            <AppProvider>
+                <KeywordResearch />
+            </AppProvider>
+        );
+        
+        expect(screen.getByLabelText(/enter seed keyword/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /research keywords/i })).toBeInTheDocument();
+    });
+    
+    test('should display keywords after successful research', async () => {
+        const mockKeywords = ['test keyword 1', 'test keyword 2'];
+        
+        // Mock successful API response
+        require('../services/api').default.researchKeywords.mockResolvedValue({
+            data: { keywords: mockKeywords }
+        });
+        
+        render(
+            <AppProvider>
+                <KeywordResearch />
+            </AppProvider>
+        );
+        
+        fireEvent.change(screen.getByLabelText(/enter seed keyword/i), {
+            target: { value: 'test keyword' }
+        });
+        
+        fireEvent.click(screen.getByRole('button', { name: /research keywords/i }));
+        
+        await waitFor(() => {
+            expect(screen.getByText('test keyword 1')).toBeInTheDocument();
+            expect(screen.getByText('test keyword 2')).toBeInTheDocument();
+        });
+    });
+});
+```
+
+**Manual Testing Checklist:**
+- [ ] User can enter seed keyword and get suggestions
+- [ ] User can select a keyword and generate titles
+- [ ] User can select a title and generate topics
+- [ ] User can generate content from selected inputs
+- [ ] User can export/copy generated content
+- [ ] Authentication works correctly
+- [ ] State persists across browser refresh
+- [ ] Error handling works for API failures
+- [ ] Loading states display correctly
+- [ ] SEO scoring provides meaningful feedback
+
+### Hour 7-8: Deployment Setup
+**Environment Configuration:**
+```bash
+# .env.example (for both frontend and backend)
+
+# Frontend (.env)
+REACT_APP_API_URL=https://your-backend-url.vercel.app/api
+REACT_APP_FIREBASE_API_KEY=your-firebase-key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+
+# Backend (.env)
+OPENAI_API_KEY=your-openai-key
+CLAUDE_API_KEY=your-claude-key
+FIREBASE_PROJECT_ID=your-project-id
+CORS_ORIGIN=https://your-frontend-url.vercel.app
+
+# Python Service (.env)
+OPENAI_API_KEY=your-openai-key
+ANTHROPIC_API_KEY=your-claude-key
+FLASK_ENV=production
+```
+
+**Vercel Deployment Configuration:**
+```json
+// vercel.json (for backend)
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "llm-service/app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/llm/(.*)",
+      "dest": "/llm-service/app.py"
+    }
+  ],
+  "env": {
+    "OPENAI_API_KEY": "@openai-api-key",
+    "CLAUDE_API_KEY": "@claude-api-key"
+  }
+}
+```
+
+**Deployment Steps:**
+1. **Frontend Deployment (Vercel):**
+   ```bash
+   npm run build
+   vercel --prod
+   ```
+
+2. **Backend Deployment (Vercel):**
+   ```bash
+   vercel --prod
+   vercel env add OPENAI_API_KEY
+   vercel env add CLAUDE_API_KEY
+   ```
+
+3. **Domain Configuration:**
+   - Set up custom domain if required
+   - Configure CORS for production URLs
+   - Update Firebase authentication domains
+
+**End of Day 3 Deliverables:**
+- Complete application with all workflow steps
+- SEO scoring functionality
+- User authentication
+- Comprehensive testing
+- Production deployment on Vercel
+- Documentation and user guide
+
+---
+
+## API SPECIFICATIONS
+
+### Backend APIs (Node.js)
+
+**Base URL:** `https://your-app.vercel.app/api`
+
+### Authentication
+```
+POST /auth/login
+Body: { email: string, password: string }
+Response: { success: boolean, user: object, token: string }
+
+POST /auth/register
+Body: { email: string, password: string }
+Response: { success: boolean, user: object, token: string }
+
+POST /auth/logout
+Headers: { Authorization: "Bearer <token>" }
+Response: { success: boolean }
+```
+
+### Keyword Research
+```
+POST /keywords/research
+Headers: { session-id: string }
+Body: { seedKeyword: string }
+Response: {
+  success: boolean,
+  data: {
+    seedKeyword: string,
+    keywords: string[],
+    timestamp: string
+  }
+}
+```
+
+### Title Generation
+```
+POST /titles/generate
+Headers: { session-id: string }
+Body: { keyword: string, tone?: string }
+Response: {
+  success: boolean,
+  data: {
+    keyword: string,
+    titles: string[],
+    timestamp: string
+  }
+}
+```
+
+### Topic Generation
+```
+POST /topics/generate
+Headers: { session-id: string }
+Body: { title: string, keyword: string }
+Response: {
+  success: boolean,
+  data: {
+    title: string,
+    keyword: string,
+    topics: object[],
+    timestamp: string
+  }
+}
+```
+
+### Content Generation
+```
+POST /content/generate
+Headers: { session-id: string }
+Body: {
+  title: string,
+  keyword: string,
+  outline: object,
+  contentType: string,
+  wordCount: number
+}
+Response: {
+  success: boolean,
+  data: {
+    content: string,
+    seoScore: object,
+    metadata: object,
+    timestamp: string
+  }
+}
+```
+
+### LLM Service APIs (Python)
+
+**Base URL:** `https://your-app.vercel.app/llm`
+
+### Generate Keywords
+```
+POST /generate-keywords
+Body: { seed_keyword: string }
+Response: {
+  keywords: string,  // JSON string array
+  processing_time: number
+}
+```
+
+### Generate Titles
+```
+POST /generate-titles
+Body: { keyword: string, tone?: string }
+Response: {
+  titles: string,  // JSON string array
+  processing_time: number
+}
+```
+
+### Generate Topics
+```
+POST /generate-topics
+Body: { title: string, keyword: string }
+Response: {
+  topics: string,  // JSON string
+  processing_time: number
+}
+```
+
+### Generate Content
+```
+POST /generate-content
+Body: {
+  title: string,
+  keyword: string,
+  outline: object,
+  content_type: string,
+  word_count: number
+}
+Response: {
+  content: string,
+  processing_time: number
+}
+```
+
+### SEO Analysis
+```
+POST /analyze-seo
+Body: {
+  content: string,
+  keyword: string,
+  title: string
+}
+Response: {
+  overall_score: number,
+  scores: object,
+  recommendations: string[]
+}
+```
+
+---
+
+## DEPLOYMENT GUIDE
+
+### Prerequisites
+- Node.js 18+ installed
+- Python 3.9+ installed
+- Vercel CLI installed: `npm i -g vercel`
+- Git repository set up
+- Firebase project created
+- OpenAI/Claude API keys obtained
+
+### Step-by-Step Deployment
+
+#### 1. Prepare Environment Variables
+Create `.env` files for each service:
+
+**Frontend (.env):**
+```
+REACT_APP_API_URL=https://seo-content-backend.vercel.app/api
+REACT_APP_LLM_URL=https://seo-content-backend.vercel.app/llm
+REACT_APP_FIREBASE_API_KEY=your-key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your-domain
+REACT_APP_FIREBASE_PROJECT_ID=your-project
+```
+
+**Backend (.env):**
+```
+OPENAI_API_KEY=sk-your-key
+CLAUDE_API_KEY=your-claude-key
+CORS_ORIGIN=https://seo-content-writer.vercel.app
+NODE_ENV=production
+```
+
+#### 2. Deploy Backend Services
+```bash
+# Deploy Node.js backend
+cd backend
+vercel --prod
+
+# Set environment variables
+vercel env add OPENAI_API_KEY
+vercel env add CLAUDE_API_KEY
+vercel env add CORS_ORIGIN
+
+# Deploy Python LLM service (if separate)
+cd ../llm-service
+vercel --prod
+vercel env add OPENAI_API_KEY
+vercel env add ANTHROPIC_API_KEY
+```
+
+#### 3. Deploy Frontend
+```bash
+cd frontend
+npm run build
+vercel --prod
+
+# Set environment variables
+vercel env add REACT_APP_API_URL
+vercel env add REACT_APP_FIREBASE_API_KEY
+# ... other env vars
+```
+
+#### 4. Configure Custom Domains (Optional)
+```bash
+vercel domains add seo-content-writer.com
+vercel domains add api.seo-content-writer.com
+```
+
+#### 5. Set up Firebase Authentication
+1. Go to Firebase Console
+2. Add your Vercel domains to authorized domains
+3. Configure authentication providers (Email/Password)
+4. Update security rules if using Firestore
+
+#### 6. Test Production Deployment
+1. Visit deployed frontend URL
+2. Test complete workflow:
+   - User registration/login
+   - Keyword research
+   - Title generation
+   - Topic selection
+   - Content creation
+   - Export functionality
+3. Check browser console for errors
+4. Verify API responses in Network tab
+
+#### 7. Monitor and Debug
+```bash
+# Check deployment logs
+vercel logs
+
+# Check function logs
+vercel logs --follow
+
+# Monitor performance
+vercel analytics
+```
+
+### Post-Deployment Checklist
+- [ ] All API endpoints returning expected responses
+- [ ] Authentication working correctly
+- [ ] LLM integration functioning
+- [ ] Content export/download working
+- [ ] Error handling displaying user-friendly messages
+- [ ] Performance acceptable (< 3s initial load)
+- [ ] Mobile responsiveness working
+- [ ] SEO scoring providing accurate feedback
+
+---
+
+## TESTING STRATEGY
+
+### Unit Tests
+**Frontend Components:**
+- Input validation and form handling
+- State management (Context)
+- API service methods
+- Utility functions
+
+**Backend APIs:**
+- Route handlers
+- Middleware functions
+- Session management
+- Input validation
+
+**Python Services:**
+- LLM service functions
+- Prompt engineering
+- SEO scoring logic
+- Response parsing
+
+### Integration Tests
+- Frontend-to-backend API calls
+- Backend-to-LLM service communication
+- Authentication flow
+- Session persistence
+- Error handling across services
+
+### End-to-End Tests
+**Complete Workflow Testing:**
+1. User registers/logs in
+2. Enters seed keyword
+3. Selects generated keyword
+4. Chooses title from options
+5. Selects topic/outline
+6. Generates content
+7. Reviews SEO score
+8. Exports content
+
+**Error Scenario Testing:**
+- API timeouts and failures
+- Invalid LLM responses
+- Network connectivity issues
+- Authentication failures
+- Rate limiting scenarios
+
+### Performance Tests
+- LLM response times
+- Concurrent user handling
+- Memory usage monitoring
+- API rate limiting
+- Frontend rendering performance
+
+### Security Tests
+- Authentication bypass attempts
+- Input sanitization
+- XSS prevention
+- CORS configuration
+- Environment variable exposure
+
+---
+
+## RISK MITIGATION
+
+### Technical Risks
+**Risk:** LLM API failures or inconsistent responses
+**Mitigation:** 
+- Implement retry logic with exponential backoff
+- Add response validation and sanitization
+- Provide fallback error messages
+- Cache successful responses when possible
+
+**Risk:** API rate limiting or cost overruns
+**Mitigation:**
+- Implement usage tracking per user
+- Add request caching for similar inputs
+- Set up usage alerts and limits
+- Provide usage statistics to users
+
+**Risk:** Poor performance with concurrent users
+**Mitigation:**
+- Implement proper async handling
+- Add request queuing for LLM calls
+- Use CDN for static assets
+- Monitor and scale infrastructure
+
+### Business Risks
+**Risk:** User experience issues during workflow
+**Mitigation:**
+- Implement comprehensive error handling
+- Add progress indicators and loading states
+- Provide clear user guidance at each step
+- Enable workflow step navigation (back/forward)
+
+**Risk:** Content quality concerns
+**Mitigation:**
+- Implement SEO scoring and recommendations
+- Allow content editing before export
+- Provide multiple content variations
+- Add content quality guidelines
+
+### Operational Risks
+**Risk:** Deployment failures or downtime
+**Mitigation:**
+- Use staged deployment process
+- Implement health checks and monitoring
+- Set up automated backup and rollback
+- Maintain separate staging environment
+
+---
+
+## POST-MVP ROADMAP
+
+### Phase 2 Features (Week 2-3)
+- **Database Integration**: PostgreSQL or MongoDB for data persistence
+- **User Dashboard**: Content history and analytics
+- **Advanced SEO Features**: Competitor analysis, SERP preview
+- **Content Templates**: Pre-built templates for different industries
+- **Bulk Content Generation**: Process multiple keywords at once
+
+### Phase 3 Features (Month 2)
+- **WordPress Integration**: Direct publishing to WordPress sites
+- **Content Calendar**: Schedule and plan content creation
+- **Team Collaboration**: Multi-user accounts and sharing
+- **Advanced Analytics**: Performance tracking and insights
+- **API Access**: Allow third-party integrations
+
+### Phase 4 Features (Month 3+)
+- **AI-Powered Content Optimization**: Continuous improvement suggestions
+- **Multi-language Support**: Content generation in different languages
+- **Advanced SEO Tools**: Technical SEO audit, backlink analysis
+- **Mobile App**: Native iOS/Android applications
+- **Enterprise Features**: White-label solutions, custom integrations
+
+### Scalability Considerations
+- Implement proper database design with indexing
+- Add caching layers (Redis/Memcached)
+- Consider microservices architecture
+- Implement proper logging and monitoring
+- Plan for CDN integration for global performance
+
+---
+
+## RESOURCE REQUIREMENTS
+
+### Development Team
+- **1 Full-Stack Developer** (React, Node.js, Python)
+- **Access to**:
+  - OpenAI GPT-4 API ($20-50/month initial budget)
+  - Or Claude API (similar pricing)
+  - Firebase account (free tier sufficient)
+  - Vercel Pro account ($20/month for team features)
+
+### Tools and Services
+- **Code Repository**: GitHub (free for public, $7/month for private)
+- **Project Management**: Notion, Trello, or GitHub Projects (free)
+- **Monitoring**: Vercel Analytics (included) + Sentry for error tracking (free tier)
+- **Testing**: Jest + React Testing Library (free)
+- **CI/CD**: GitHub Actions (free for public repos)
+
+### Budget Estimation (Monthly)
+- **LLM API Costs**: $30-100 (depending on usage)
+- **Vercel Hosting**: $20 (Pro plan)
+- **Firebase**: $0 (free tier)
+- **Monitoring/Tools**: $10-20
+- **Total Monthly**: $60-140
+
+### Time Investment
+- **Initial MVP**: 24 hours (3 days × 8 hours)
+- **Testing & Refinement**: 8 hours
+- **Documentation**: 4 hours
+- **Total MVP Delivery**: 36 hours over 4-5 days
+
+---
+
+This detailed plan provides everything needed to build and deploy your AI Content Writer prototype within the 3-day timeline. The modular approach allows for rapid development while maintaining code quality and scalability for future iterations.

@@ -1,0 +1,27 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "backend/server.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "llm-service/app.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "/backend/server.js"
+        },
+        {
+            "src": "/llm/(.*)",
+            "dest": "/llm-service/app.py"
+        }
+    ],
+    "env": {
+        "OPENAI_API_KEY": "@openai-api-key",
+        "NODE_ENV": "production"
+    }
+}

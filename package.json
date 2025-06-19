@@ -1,0 +1,26 @@
+{
+    "name": "seo-content-writer-project",
+    "version": "1.0.0",
+    "description": "AI-powered SEO content writer - Complete project",
+    "scripts": {
+        "install-all": "cd seo-content-writer && npm install && cd ../backend && npm install && cd ../llm-service && pip install -r requirements.txt",
+        "dev": "concurrently \"cd backend && npm run dev\" \"cd llm-service && python app.py\" \"cd seo-content-writer && npm start\"",
+        "build": "cd seo-content-writer && npm run build",
+        "start": "cd backend && npm start",
+        "test": "cd seo-content-writer && npm test"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    },
+    "keywords": [
+        "seo",
+        "content",
+        "ai",
+        "writer",
+        "react",
+        "nodejs",
+        "python"
+    ],
+    "author": "",
+    "license": "MIT"
+}
