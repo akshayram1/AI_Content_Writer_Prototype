@@ -105,6 +105,8 @@ const appReducer = (state, action) => {
                 seoScore: null,
                 error: null,
             };
+        case 'SET_SEO_SCORE':
+            return { ...state, seoScore: action.payload };
         default:
             return state;
     }
@@ -173,6 +175,7 @@ export const AppProvider = ({ children }) => {
         setUser: (user) => dispatch({ type: 'SET_USER', payload: user }),
         logout: () => dispatch({ type: 'LOGOUT' }),
         resetWorkflow: () => dispatch({ type: 'RESET_WORKFLOW' }),
+        setSeoScore: (seoScore) => dispatch({ type: 'SET_SEO_SCORE', payload: seoScore }),
     };
 
     return (

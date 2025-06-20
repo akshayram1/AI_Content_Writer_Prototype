@@ -126,6 +126,19 @@ class ApiService {
             throw new Error(error.response?.data?.error || 'Logout failed');
         }
     }
+
+    async analyzeSEO(data) {
+        try {
+            const response = await this.client.post('/content/analyze-seo', {
+                content: data.content,
+                keyword: data.keyword,
+                title: data.title
+            });
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.error || 'Failed to analyze SEO score');
+        }
+    }
 }
 
 export default new ApiService();

@@ -5,6 +5,7 @@ import Header from './components/common/Header';
 import Dashboard from './components/dashboard/Dashboard';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
+import SEOTestPage from './components/SEOTestPage';
 import { useApp } from './context/AppContext';
 import AuthService from './services/auth';
 
@@ -55,6 +56,13 @@ function App() {
                             )
                         }
                     />
+                    <Route path="/seo-test" element={
+                        state.isAuthenticated ? (
+                            <SEOTestPage />
+                        ) : (
+                            <Navigate to="/login" replace />
+                        )
+                    } />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Container>

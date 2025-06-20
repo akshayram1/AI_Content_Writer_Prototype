@@ -25,6 +25,8 @@ import { useApp } from '../../context/AppContext';
 import ApiService from '../../services/api';
 import Loading from '../common/Loading';
 import ErrorMessage from '../common/ErrorMessage';
+import SEOScoreButton from '../common/SEOScoreButton';
+import SEOScoreSidebar from '../common/SEOScoreSidebar';
 import { CONTENT_TYPES, WORD_COUNTS } from '../../utils/constants';
 import { exportToFile, copyToClipboard, getSEOScoreColor, getSEOScoreLabel } from '../../utils/helpers';
 
@@ -33,6 +35,7 @@ const ContentCreation = () => {
     const [contentType, setContentType] = useState('blog_intro');
     const [wordCount, setWordCount] = useState(150);
     const [copySuccess, setCopySuccess] = useState(false);
+    const [seoSidebarOpen, setSeoSidebarOpen] = useState(false);
 
     const generateContent = async () => {
         actions.setLoading(true);
@@ -286,6 +289,24 @@ ${state.generatedContent}`;
                     </Alert>
                 )}
             </Paper>
+
+            {/* Floating SEO Score Button */}
+            {state.generatedContent && (
+                <SEOScoreButton
+                    score={state.seoScore?.overall_score || null}
+                    onClick={() => setSeoSidebarOpen(true)}
+                    visible={true}
+                />
+            )}
+
+            {/* SEO Score Sidebar */}
+            <SEOScoreSidebar
+                open={seoSidebarOpen}
+                onClose={() => setSeoSidebarOpen(false)}
+                content={state.generatedContent}
+                title={state.selectedTitle}
+                keyword={state.selectedKeyword}
+            />
         </Box>
     );
 };

@@ -1,5 +1,7 @@
 import React from 'react';
-import { Box, Container, Fade } from '@mui/material';
+import { Box, Container, Fade, Fab, Tooltip } from '@mui/material';
+import { Science as ScienceIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import WorkflowStepper from '../workflow/WorkflowStepper';
 import KeywordResearch from '../workflow/KeywordResearch';
 import TitleGeneration from '../workflow/TitleGeneration';
@@ -9,6 +11,7 @@ import { useApp } from '../../context/AppContext';
 
 const Dashboard = () => {
     const { state } = useApp();
+    const navigate = useNavigate();
 
     const renderCurrentStep = () => {
         const components = {
@@ -39,10 +42,31 @@ const Dashboard = () => {
                                     {renderCurrentStep()}
                                 </Box>
                             </Fade>
-                        </Box>
-                    </Box>
+                        </Box>                    </Box>
                 </Fade>
             </Container>
+
+            {/* SEO Test Page FAB */}
+            <Tooltip title="Test SEO Scoring Feature" placement="left">
+                <Fab
+                    color="secondary"
+                    onClick={() => navigate('/seo-test')}
+                    sx={{
+                        position: 'fixed',
+                        left: 24,
+                        bottom: 24,
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                        color: 'white',
+                        '&:hover': {
+                            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                            transform: 'scale(1.05)',
+                        },
+                        transition: 'all 0.3s ease-in-out',
+                    }}
+                >
+                    <ScienceIcon />
+                </Fab>
+            </Tooltip>
         </Box>
     );
 };

@@ -81,4 +81,46 @@ router.get('/current', (req, res) => {
     });
 });
 
+// Analyze SEO score for any content
+router.post('/analyze-seo', async (req, res) => {
+    try {
+        const { content, keyword, title } = req.body;
+
+        if (!content || typeof content !== 'string') {
+            return res.status(400).json({
+                success: false,
+                error: 'Content is required'
+            });
+        }
+
+        if (!keyword || typeof keyword !== 'string') {
+            return res.status(400).json({
+                success: false,
+                error: 'Keyword is required'
+            });
+        }
+
+        if (!title || typeof title !== 'string') {
+            return res.status(400).json({
+                success: false,
+                error: 'Title is required'
+            });
+        }
+
+        // Call LLM service to analyze SEO
+        const seoAnalysis = await llmService.analyzeSEO(content, keyword, title);
+
+        res.json({
+            success: true,
+            data: seoAnalysis
+        });
+    } catch (error) {
+        console.error('SEO analysis error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to analyze SEO'
+        });
+    }
+});
+
 module.exports = router;
